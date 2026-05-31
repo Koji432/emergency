@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS ロック画面風 緊急モード</title>
+    <style>
+        /* ページ全体のレイアウト */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            background-color: #000; /* ベースを真っ黒に */
+        }
+
+        /* ロック画面の背景（緊急用の点滅エフェクト） */
+        .lock-screen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+            /* 背景の赤い光の脈動アニメーション */
+            .lock-screen::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: radial-gradient(circle, rgba(200, 0, 0, 0.4) 0%, rgba(0, 0, 0, 1) 80%);
+                animation: alertPulse 1.5s infinite alternate; /* 1.5秒かけて点滅を繰り返す */
+                z-index: 0; /* 背景なので一番下に配置 */
+            }
+
+        /* 時刻表示 */
+        .clock-container {
+            margin-top: 60px;
+            color: white;
+            text-align: center;
+            z-index: 1; /* 背景の光より手前に出す */
+        }
+
+        #time {
+            font-size: 80px;
+            font-weight: 200;
+            margin: 0;
+        }
+
+        #date {
+            font-size: 20px;
+            font-weight: 400;
+            margin-top: -10px;
+        }
+
+        /* 通知バナーのコンテナ */
+        .notification-container {
+            position: absolute;
+            top: 220px;
+            width: 90%;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1; /* 背景の光より手前に出す */
+        }
+
+        /* 緊急通知バナー本体（赤みを帯びたデザイン） */
+        .emergency-notification {
+            background: rgba(255, 240, 240, 0.85); /* ほんのり赤い半透明の白 */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(255, 0, 0, 0.2); /* 赤い影 */
+            border: 1px solid rgba(255, 59, 48, 0.5); /* 薄い赤い枠線 */
+            animation: slideIn 0.5s ease-out;
+        }
+
+        /* バナー内のヘッダー */
+        .notif-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        /* タイトルの基本設定 */
+        .notif-title {
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 文字を赤くするクラス */
+        .text-red {
+            color: #ff3b30;
+        }
+
+        /* 緊急用の赤いアイコン */
+        .icon-red {
+            width: 12px;
+            height: 12px;
+            background-color: #ff3b30;
+            border-radius: 3px;
+        }
+
+        .notif-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* バナー内のメッセージ本文 */
+        .notif-body {
+            font-size: 15px;
+            color: #000;
+            line-height: 1.4;
+            font-weight: 600; /* 少し文字を太くして読みやすく */
+        }
+
+        /* 出現アニメーション */
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* 背景の点滅アニメーション */
+        @keyframes alertPulse {
+            from {
+                opacity: 0.4;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lock-screen">
+        <div class="clock-container">
+            <h1 id="time">00:00</h1>
+            <div id="date">1月1日(月)</div>
+        </div>
+
+        <div class="notification-container">
+
+            <div class="emergency-notification">
+                <div class="notif-header">
+                    <div class="notif-title text-red">
+                        <div class="icon-red"></div>
+                        緊急速報
+                    </div>
+                    <div class="notif-time">今</div>
+                </div>
+                <div class="notif-body">
+                    地震速報：〇〇地方で地震が発生しました。強い揺れに備えてください。
+                </div>
+            </div>
+
+            <div class="emergency-notification">
+                <div class="notif-header">
+                    <div class="notif-title text-red">
+                        <div class="icon-red"></div>
+                        お知らせ
+                    </div>
+                    <div class="notif-time">今</div>
+                </div>
+                <div class="notif-body">
+                    救助が来るのはあと三か月後です。
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 時計を更新する関数
+        function updateClock() {
+            const now = new Date();
+
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('time').textContent = `${hours}:${minutes}`;
+
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            const month = now.getMonth() + 1;
+            const date = now.getDate();
+            const dayName = days[now.getDay()];
+            document.getElementById('date').textContent = `${month}月${date}日(${dayName})`;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+
+</body>
+</html>
